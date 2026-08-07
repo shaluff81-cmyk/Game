@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Deduction Files — 100 Cases</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14110F;
+    --panel:#1D1813;
+    --panel-2:#241D16;
+    --paper:#EFE6D2;
+    --paper-2:#E4D8BC;
+    --ink:#2B2118;
+    --ink-dim:#5B4E3C;
+    --accent:#B23A2E;
+    --gold:#C9A54A;
+    --muted:#9C8F7A;
+    --line: rgba(201,165,74,0.18);
+    --ok:#4C7A4C;
+    --bad:#A23A34;
+    --serif: 'Playfair Display', Georgia, serif;
+    --mono: 'Courier Prime', 'Courier New', monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background: radial-gradient(circle at 20% 0%, #1c1712 0%, var(--bg) 55%);
+    color: var(--muted);
+    font-family: var(--mono);
+    min-height:100vh;
+  }
+  ::selection{ background:var(--accent); color:var(--paper); }
+  button{ font-family:inherit; cursor:pointer; }
+  select{ font-family:inherit; }
+
+  .screen{ display:none; min-height:100vh; }
+  .screen.active{ display:block; }
+
+  /* ---------------- top bar ---------------- */
+  .topbar{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:16px 28px; border-bottom:1px solid var(--line);
+    background:var(--panel);
+  }
+  .brand{ font-family:var(--serif); font-weight:800; font-size:1.25rem; color:var(--paper); letter-spacing:0.02em; }
+  .brand .dot{ color:var(--accent); }
+  .rank-pill{
+    font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase;
+    border:1px solid var(--gold); color:var(--gold); padding:6px 12px; border-radius:2px;
+    display:flex; gap:10px; align-items:center;
+  }
+  .rank-pill b{ color:var(--paper); }
+
+  /* ---------------- HOME ---------------- */
+  #screenHome{
+    display:none;
+    min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    padding: 40px 20px;
+    position:relative; overflow:hidden;
+  }
+  #screenHome.active{ display:flex; }
+  .home-inner{ max-width:640px; text-align:center; position:relative; z-index:2; }
+  .home-eyebrow{
+    font-size:0.72rem; letter-spacing:0.24em; text-transform:uppercase; color:var(--accent);
+    margin-bottom:18px;
+  }
+  .home-title{
+    font-family:var(--serif); font-weight:800; font-size:clamp(2.4rem,7vw,4rem);
+    color:var(--paper); line-height:1.05; margin-bottom:18px;
+  }
+  .home-title span{ color:var(--accent); }
+  .home-desc{
+    color:var(--muted); font-size:0.98rem; line-height:1.7; max-width:52ch; margin:0 auto 34px;
+  }
+  .home-stats{
+    display:flex; gap:26px; justify-content:center; margin-bottom:36px; flex-wrap:wrap;
+  }
+  .home-stat{ text-align:center; }
+  .home-stat .num{ font-family:var(--serif); font-size:1.7rem; color:var(--gold); font-weight:700;}
+  .home-stat .lbl{ font-size:0.66rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); }
+  .btn{
+    font-family:var(--mono); font-weight:700; font-size:0.9rem; letter-spacing:0.05em;
+    padding:14px 30px; border:none; border-radius:2px; text-transform:uppercase;
+  }
+  .btn-main{ background:var(--accent); color:var(--paper); }
+  .btn-main:hover{ background:#c94539; }
+  .btn-ghost{ background:transparent; border:1px solid var(--line); color:var(--paper); }
+  .btn-ghost:hover{ border-color:var(--gold); color:var(--gold); }
+
+  /* ---------------- LEVEL SELECT ---------------- */
+  #screenLevels .wrap{ max-width:920px; margin:0 auto; padding: 34px 24px 60px; }
+  .chapter{ margin-bottom:38px; }
+  .chapter-head{
+    display:flex; align-items:baseline; gap:14px; margin-bottom:16px;
+    border-bottom:1px dashed var(--line); padding-bottom:10px;
+  }
+  .chapter-head h2{ font-family:var(--serif); color:var(--paper); font-size:1.2rem; }
+  .chapter-head .diff{ font-size:0.68rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent); }
+  .level-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(64px,1fr)); gap:8px;
+  }
+  .lvl-btn{
+    aspect-ratio:1; border:1px solid var(--line); background:var(--panel);
+    color:var(--muted); font-size:0.82rem; border-radius:3px; position:relative;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transition: border-color .15s ease, transform .1s ease;
+  }
+  .lvl-btn:not(.locked):hover{ border-color:var(--gold); transform:translateY(-2px); }
+  .lvl-btn.locked{ opacity:0.35; cursor:not-allowed; }
+  .lvl-btn.solved{ background:var(--panel-2); border-color:var(--gold); color:var(--paper); }
+  .lvl-btn .stars{ font-size:0.55rem; color:var(--gold); letter-spacing:1px; margin-top:2px; }
+
+  /* ---------------- CASE SCREEN ---------------- */
+  #screenCase .wrap{ max-width:1080px; margin:0 auto; padding: 26px 22px 70px; }
+  .case-head{ margin-bottom:22px; }
+  .back-link{ background:none; border:none; color:var(--muted); font-size:0.78rem; margin-bottom:14px; display:inline-flex; gap:6px; align-items:center; }
+  .back-link:hover{ color:var(--gold); }
+  .case-eyebrow{ font-size:0.7rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); margin-bottom:6px; }
+  .case-title{ font-family:var(--serif); font-size:1.9rem; color:var(--paper); font-weight:700; margin-bottom:14px; }
+  .case-intro{
+    background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--accent);
+    padding:16px 18px; font-size:0.9rem; line-height:1.7; color:var(--muted);
+  }
+  .case-intro b{ color:var(--paper); }
+
+  .case-grid{ display:grid; grid-template-columns: 320px 1fr; gap:26px; margin-top:26px; }
+  @media (max-width:820px){ .case-grid{ grid-template-columns:1fr; } }
+
+  .clues-panel h3, .grid-panel h3{
+    font-family:var(--serif); color:var(--paper); font-size:1rem; margin-bottom:12px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .clue-list{
+    background:var(--paper); color:var(--ink); border-radius:2px;
+    padding:6px 4px; max-height:560px; overflow-y:auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .clue-item{
+    padding:12px 14px; border-bottom:1px dashed var(--paper-2); font-size:0.84rem; line-height:1.55;
+    display:flex; gap:10px;
+  }
+  .clue-item:last-child{ border-bottom:none; }
+  .clue-num{ font-weight:700; color:var(--accent); flex:none; }
+  .clue-hint{ background:#DDD0B0; }
+
+  .hint-row{ margin-top:12px; display:flex; gap:10px; }
+  .btn-small{
+    font-size:0.72rem; padding:9px 14px; border-radius:2px;
+  }
+
+  table.deduction{ width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--line); }
+  table.deduction th{
+    font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold);
+    text-align:left; padding:10px 8px; border-bottom:1px solid var(--line);
+  }
+  table.deduction td{ padding:8px; border-bottom:1px solid var(--line); }
+  table.deduction tr:last-child td{ border-bottom:none; }
+  table.deduction td.suspect-name{ color:var(--paper); font-size:0.86rem; white-space:nowrap; }
+  select.attr-select{
+    width:100%; background:var(--panel-2); color:var(--muted); border:1px solid var(--line);
+    padding:7px 6px; font-size:0.78rem; border-radius:2px;
+  }
+  select.attr-select.correct{ border-color:var(--ok); color:#bfe0bf; }
+  select.attr-select.incorrect{ border-color:var(--bad); color:#f0bcb8; }
+
+  .grid-actions{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+
+  .accuse-panel{ margin-top:24px; }
+  .accuse-panel h3{ font-family:var(--serif); color:var(--paper); font-size:1rem; margin-bottom:12px; }
+  .accuse-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px; }
+  .accuse-btn{
+    background:var(--panel); border:1px solid var(--line); color:var(--muted);
+    padding:12px 8px; border-radius:2px; font-size:0.82rem;
+  }
+  .accuse-btn:hover{ border-color:var(--accent); color:var(--paper); }
+
+  .feedback{ margin-top:12px; font-size:0.82rem; min-height:1.4em; }
+  .feedback.ok{ color:#8fbf8f; }
+  .feedback.bad{ color:#e08a83; }
+
+  /* ---------------- modal ---------------- */
+  .modal-bg{
+    position:fixed; inset:0; background:rgba(10,8,6,0.82);
+    display:none; align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .modal-bg.active{ display:flex; }
+  .modal{
+    background:var(--paper); color:var(--ink); max-width:420px; width:100%;
+    padding:34px 30px; border-radius:3px; text-align:center;
+  }
+  .modal h2{ font-family:var(--serif); font-size:1.6rem; margin-bottom:10px; }
+  .modal .stars-big{ font-size:1.6rem; color:var(--accent); letter-spacing:6px; margin-bottom:14px; }
+  .modal p{ font-size:0.88rem; color:var(--ink-dim); margin-bottom:22px; line-height:1.6; }
+  .modal-actions{ display:flex; gap:10px; justify-content:center; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">The Deduction Files<span class="dot">.</span></div>
+  <div class="rank-pill">Rank: <b id="rankLabel">Rookie</b> · <span id="starTotal">0</span>/300 ★</div>
+</div>
+
+<!-- HOME -->
+<div class="screen active" id="screenHome">
+  <div class="home-inner">
+    <div class="home-eyebrow">100 Cases · Pure Logic · No Luck</div>
+    <h1 class="home-title">Every clue is <span>true</span>.<br>Every case has <span>one</span> answer.</h1>
+    <p class="home-desc">
+      100 procedurally-built murder cases, each solvable by logic alone — no guessing,
+      no random luck. Cases 1–20 ease you in. By the 90s, you'll be holding six suspects,
+      three attributes, and a handful of indirect clues in your head at once.
+    </p>
+    <div class="home-stats">
+      <div class="home-stat"><div class="num" id="statSolved">0</div><div class="lbl">Solved</div></div>
+      <div class="home-stat"><div class="num" id="statUnlocked">1</div><div class="lbl">Unlocked</div></div>
+      <div class="home-stat"><div class="num">100</div><div class="lbl">Total cases</div></div>
+    </div>
+    <button class="btn btn-main" id="beginBtn">Open case files</button>
+  </div>
+</div>
+
+<!-- LEVEL SELECT -->
+<div class="screen" id="screenLevels">
+  <div class="wrap">
+    <div id="chaptersWrap"></div>
+  </div>
+</div>
+
+<!-- CASE SCREEN -->
+<div class="screen" id="screenCase">
+  <div class="wrap">
+    <button class="back-link" id="backBtn">← Back to case files</button>
+    <div class="case-head">
+      <div class="case-eyebrow" id="caseEyebrow">Case 1 · Rookie</div>
+      <div class="case-title" id="caseTitle">The Silent Study</div>
+      <div class="case-intro" id="caseIntro"></div>
+    </div>
+
+    <div class="case-grid">
+      <div class="clues-panel">
+        <h3>Testimony &amp; evidence</h3>
+        <div class="clue-list" id="clueList"></div>
+        <div class="hint-row">
+          <button class="btn btn-ghost btn-small" id="hintBtn">Reveal a clue (−1★)</button>
+          <button class="btn btn-ghost btn-small" id="checkBtn">Check my grid</button>
+        </div>
+        <div class="feedback" id="gridFeedback"></div>
+      </div>
+
+      <div class="grid-panel">
+        <h3>Deduction grid</h3>
+        <table class="deduction" id="deductionTable"></table>
+        <div class="grid-actions">
+          <button class="btn btn-ghost btn-small" id="resetBtn">Reset grid</button>
+        </div>
+
+        <div class="accuse-panel">
+          <h3>Who did it?</h3>
+          <div class="accuse-grid" id="accuseGrid"></div>
+          <div class="feedback" id="accuseFeedback"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2 id="modalTitle">Case closed</h2>
+    <div class="stars-big" id="modalStars">★★★</div>
+    <p id="modalText">You correctly identified the culprit.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-small" id="modalReplay">Replay case</button>
+      <button class="btn btn-main btn-small" id="modalNext">Next case →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ===================== DATA BANKS ===================== */
+  const NAMES = ['Aarav','Meera','Rohan','Kavya','Dev','Isha','Arjun','Priya','Vikram','Neha',
+    'Aditya','Sana','Kabir','Riya','Yash','Tara','Aman','Diya','Rajat','Simran',
+    'Karan','Zoya','Nikhil','Anaya','Rishi','Maya','Varun','Leela','Om','Ira'];
+  const WEAPONS = ['dagger','candlestick','wrench','revolver','rope','poison vial','letter opener',
+    'fire poker','hammer','scissors','ice pick','razor','cricket bat','kitchen knife','silver trophy'];
+  const LOCATIONS = ['library','kitchen','garden','study','ballroom','cellar','attic','conservatory',
+    'billiard room','dining hall','balcony','wine cellar','greenhouse','guest room','rooftop'];
+  const MOTIVES = ['jealousy','revenge','an inheritance','blackmail','an old rivalry','a hidden affair',
+    'a gambling debt','a broken promise','professional rivalry','a family secret','an unpaid loan','a stolen invention'];
+  const MANORS = ['Ashcombe Manor','Blackwood Estate','Ravenswood House','Thornfield Hall','Wysteria Lodge','Marlow Court'];
+  const ADJ = ['Silent','Hidden','Final','Crimson','Velvet','Broken','Whispering','Shattered','Forgotten','Midnight','Vanishing','Locked','Bitter','Pale','Curious'];
+  const NOUN = ['Secret','Letter','Portrait','Ledger','Garden','Masquerade','Inheritance','Alibi','Testimony','Confession','Key','Diary','Toast','Heirloom','Séance'];
+  const BANK = { weapon: WEAPONS, location: LOCATIONS, motive: MOTIVES };
+  const CAT_LABEL = { weapon:'Weapon', location:'Location', motive:'Motive' };
+
+  /* ===================== RNG UTILS ===================== */
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed>>>15, 1 | seed);
+      t = t + Math.imul(t ^ t>>>7, 61 | t) ^ t;
+      return ((t ^ t>>>14) >>> 0) / 4294967296;
+    };
+  }
+  function shuffle(arr, rng){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(rng()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+  function sampleDistinct(bank, n, rng){ return shuffle(bank, rng).slice(0,n); }
+  function randPermutation(n, rng){ return shuffle([...Array(n).keys()], rng); }
+  function weightedShuffle(items, weightFn, rng){
+    return items.map(it => ({it, key: Math.pow(rng(), 1/Math.max(weightFn(it),0.0001))}))
+      .sort((a,b)=> b.key - a.key).map(x=>x.it);
+  }
+
+  /* ===================== TIER CONFIG ===================== */
+  function tierFor(n){
+    if(n<=20) return {label:'Rookie Cases', diff:'Easy', N:3, cats:['weapon','location'], floorRatio:0.85, weights:[5,3,1], prune:false};
+    if(n<=40) return {label:'Field Investigations', diff:'Medium', N:4, cats:['weapon','location'], floorRatio:0.6, weights:[3,3,2], prune:false};
+    if(n<=60) return {label:'Complex Cases', diff:'Medium-Hard', N:4, cats:['weapon','location','motive'], floorRatio:0.55, weights:[2,3,3], prune:true};
+    if(n<=80) return {label:'Advanced Deductions', diff:'Hard', N:5, cats:['weapon','location','motive'], floorRatio:0.42, weights:[1,2,4], prune:true};
+    return {label:'Genius Files', diff:'Expert', N:6, cats:['weapon','location','motive'], floorRatio:0.32, weights:[0.5,1,5], prune:true};
+  }
+  function chapterOf(n){
+    if(n<=20) return 1; if(n<=40) return 2; if(n<=60) return 3; if(n<=80) return 4; return 5;
+  }
+
+  /* ===================== CLUE POOL & TEXT ===================== */
+  function shortSubjectClause(cat, val){
+    if(cat==='weapon') return `had the ${val}`;
+    if(cat==='location') return `was in the ${val}`;
+    return `was driven by ${val}`;
+  }
+  function shortPredicateClause(cat, val){
+    if(cat==='weapon') return `carried the ${val}`;
+    if(cat==='location') return `was in the ${val}`;
+    return `acted out of ${val}`;
+  }
+  function directText(cat, name, val, positive){
+    if(cat==='weapon') return positive ? `${name} was seen carrying the ${val}.` : `${name} was never seen carrying the ${val}.`;
+    if(cat==='location') return positive ? `${name} was in the ${val} that night.` : `${name} was not in the ${val} that night.`;
+    return positive ? `${name}'s motive was rooted in ${val}.` : `${name} had no connection to ${val}.`;
+  }
+  function linkText(cat1, val1, cat2, val2, positive){
+    const subj = shortSubjectClause(cat1, val1);
+    if(positive) return `Whoever ${subj} also ${shortPredicateClause(cat2, val2)}.`;
+    return `Whoever ${subj} did NOT ${shortPredicateClause(cat2, val2)}.`;
+  }
+
+  function generateAllTrueClues(N, cats, solution){
+    const pool = [];
+    for(const cat of cats){
+      for(let s=0;s<N;s++){
+        const trueVal = solution[cat][s];
+        pool.push({type:'direct', sign:1, cat, suspect:s, val:trueVal, weightClass:'dp'});
+        for(let v=0;v<N;v++){
+          if(v!==trueVal) pool.push({type:'direct', sign:-1, cat, suspect:s, val:v, weightClass:'dn'});
+        }
+      }
+    }
+    for(let i=0;i<cats.length;i++){
+      for(let j=i+1;j<cats.length;j++){
+        const cat1=cats[i], cat2=cats[j];
+        for(let s=0;s<N;s++){
+          const v1 = solution[cat1][s], v2 = solution[cat2][s];
+          pool.push({type:'link', sign:1, cat1, val1:v1, cat2, val2:v2, weightClass:'lk'});
+          for(let s2=0;s2<N;s2++){
+            if(s2===s) continue;
+            const v2b = solution[cat2][s2];
+            pool.push({type:'link', sign:-1, cat1, val1:v1, cat2, val2:v2b, weightClass:'lk'});
+          }
+        }
+      }
+    }
+    return pool;
+  }
+
+  function countSolutions(N, cats, clues, cap){
+    const C = cats.length;
+    const used = {}; cats.forEach(c=> used[c] = new Array(N).fill(false));
+    const row = new Array(C);
+    let count = 0;
+    const directBySuspect = {};
+    for(const cl of clues){
+      if(cl.type==='direct'){
+        const key = cl.suspect+'|'+cl.cat;
+        (directBySuspect[key] = directBySuspect[key]||[]).push(cl);
+      }
+    }
+    const linkClues = clues.filter(c=>c.type==='link');
+
+    function assign(suspectIdx, catIdx){
+      if(count>=cap) return;
+      if(suspectIdx===N){ count++; return; }
+      if(catIdx===C){
+        for(const cl of linkClues){
+          const i1 = cats.indexOf(cl.cat1), i2 = cats.indexOf(cl.cat2);
+          if(row[i1]===cl.val1){
+            const holds = (row[i2]===cl.val2);
+            if(cl.sign>0 && !holds) return;
+            if(cl.sign<0 && holds) return;
+          }
+        }
+        assign(suspectIdx+1, 0);
+        return;
+      }
+      const cat = cats[catIdx];
+      const dc = directBySuspect[suspectIdx+'|'+cat] || [];
+      for(let v=0; v<N; v++){
+        if(used[cat][v]) continue;
+        let ok = true;
+        for(const cl of dc){
+          if(cl.sign>0 && cl.val!==v){ ok=false; break; }
+          if(cl.sign<0 && cl.val===v){ ok=false; break; }
+        }
+        if(!ok) continue;
+        used[cat][v]=true; row[catIdx]=v;
+        assign(suspectIdx, catIdx+1);
+        used[cat][v]=false;
+        if(count>=cap) return;
+      }
+    }
+    assign(0,0);
+    return count;
+  }
+
+  /* ===================== LEVEL GENERATION ===================== */
+  const levelCache = {};
+  function generateLevel(n){
+    if(levelCache[n]) return levelCache[n];
+    const cfg = tierFor(n);
+    const rng = mulberry32(1000 + n*7919);
+    const N = cfg.N, cats = cfg.cats;
+
+    const suspects = sampleDistinct(NAMES, N, rng);
+    const values = {}; cats.forEach(c=> values[c] = sampleDistinct(BANK[c], N, rng));
+    const solution = {}; cats.forEach(c=> solution[c] = randPermutation(N, rng));
+
+    const guiltyIdx = Math.floor(rng()*N);
+    const crimeWeaponIdx = solution['weapon'][guiltyIdx];
+
+    const pool = generateAllTrueClues(N, cats, solution);
+    const weightFn = (cl)=> cl.weightClass==='dp' ? cfg.weights[0] : cl.weightClass==='dn' ? cfg.weights[1] : cfg.weights[2];
+    const ordered = weightedShuffle(pool, weightFn, rng);
+
+    const floor = Math.max(3, Math.round(N*cats.length*cfg.floorRatio));
+    let selected = [];
+    for(const cl of ordered){
+      selected.push(cl);
+      if(selected.length >= floor && countSolutions(N, cats, selected, 2) === 1) break;
+    }
+    // safety: ensure unique, keep adding if not yet (shouldn't normally trigger)
+    let idx = ordered.indexOf(selected[selected.length-1]) + 1;
+    while(countSolutions(N, cats, selected, 2) !== 1 && idx < ordered.length){
+      selected.push(ordered[idx]); idx++;
+    }
+
+    if(cfg.prune){
+      for(let pass=0; pass<2; pass++){
+        for(let i=selected.length-1; i>=0; i--){
+          const test = selected.slice(0,i).concat(selected.slice(i+1));
+          if(test.length>=2 && countSolutions(N, cats, test, 2)===1){
+            selected = test;
+          }
+        }
+      }
+    }
+
+    const usedSet = new Set(selected);
+    const hintPool = shuffle(pool.filter(cl=>!usedSet.has(cl) && cl.type!=='link' ), rng).slice(0,6)
+      .concat(shuffle(pool.filter(cl=>!usedSet.has(cl) && cl.type==='link'), rng).slice(0,4));
+
+    function clueToText(cl){
+      if(cl.type==='direct'){
+        const name = suspects[cl.suspect];
+        const val = values[cl.cat][cl.val];
+        return directText(cl.cat, name, val, cl.sign>0);
+      } else {
+        const v1 = values[cl.cat1][cl.val1], v2 = values[cl.cat2][cl.val2];
+        return linkText(cl.cat1, v1, cl.cat2, v2, cl.sign>0);
+      }
+    }
+
+    const clueTexts = shuffle(selected, rng).map(clueToText);
+    const hintTexts = hintPool.map(clueToText);
+
+    const victimPool = NAMES.filter(nm=>!suspects.includes(nm));
+    const victim = victimPool[Math.floor(rng()*victimPool.length)];
+    const manor = MANORS[Math.floor(rng()*MANORS.length)];
+    const crimeLocation = values['location'] ? values['location'][Math.floor(rng()*N)] : 'manor';
+    const title = `The ${ADJ[Math.floor(rng()*ADJ.length)]} ${NOUN[Math.floor(rng()*NOUN.length)]}`;
+
+    const level = {
+      n, cfg, N, cats, suspects, values, solution, guiltyIdx,
+      crimeWeaponIdx, clueTexts, hintTexts, victim, manor, crimeLocation, title
+    };
+    levelCache[n] = level;
+    return level;
+  }
+
+  /* ===================== PROGRESS (in-memory only) ===================== */
+  const progress = { solved:{}, maxUnlocked:1, hintsUsed:{}, wrongTries:{} };
+
+  function totalStars(){
+    return Object.values(progress.solved).reduce((a,b)=>a+b,0);
+  }
+  function rankLabel(){
+    const s = Object.keys(progress.solved).length;
+    if(s>=95) return 'Genius Detective';
+    if(s>=75) return 'Chief Detective';
+    if(s>=50) return 'Senior Detective';
+    if(s>=25) return 'Investigator';
+    if(s>=10) return 'Analyst';
+    return 'Rookie';
+  }
+  function refreshTopbar(){
+    document.getElementById('starTotal').textContent = totalStars();
+    document.getElementById('rankLabel').textContent = rankLabel();
+    document.getElementById('statSolved').textContent = Object.keys(progress.solved).length;
+    document.getElementById('statUnlocked').textContent = progress.maxUnlocked;
+  }
+
+  /* ===================== SCREEN MGMT ===================== */
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function buildLevelSelect(){
+    const wrap = document.getElementById('chaptersWrap');
+    wrap.innerHTML = '';
+    for(let ch=1; ch<=5; ch++){
+      const start = (ch-1)*20+1, end = ch*20;
+      const cfgSample = tierFor(start);
+      const chDiv = document.createElement('div');
+      chDiv.className = 'chapter';
+      chDiv.innerHTML = `<div class="chapter-head"><h2>${cfgSample.label}</h2><span class="diff">${cfgSample.diff} · Cases ${start}–${end}</span></div>`;
+      const grid = document.createElement('div');
+      grid.className = 'level-grid';
+      for(let n=start; n<=end; n++){
+        const btn = document.createElement('button');
+        const locked = n > progress.maxUnlocked;
+        const solvedStars = progress.solved[n];
+        btn.className = 'lvl-btn' + (locked?' locked':'') + (solvedStars?' solved':'');
+        btn.innerHTML = `<span>${n}</span>` + (solvedStars ? `<span class="stars">${'★'.repeat(solvedStars)}</span>` : '');
+        if(!locked) btn.addEventListener('click', ()=> openCase(n));
+        grid.appendChild(btn);
+      }
+      chDiv.appendChild(grid);
+      wrap.appendChild(chDiv);
+    }
+  }
+
+  /* ===================== CASE SCREEN LOGIC ===================== */
+  let current = null;
+  let gridState = null;
+  let sessionHints = 0, sessionWrong = 0;
+
+  function openCase(n){
+    current = generateLevel(n);
+    sessionHints = 0; sessionWrong = 0;
+    gridState = {};
+    current.cats.forEach(c=> gridState[c] = new Array(current.N).fill(-1));
+
+    document.getElementById('caseEyebrow').textContent = `Case ${n} · ${current.cfg.diff}`;
+    document.getElementById('caseTitle').textContent = current.title;
+    const wCap = current.values['weapon'][current.crimeWeaponIdx];
+    document.getElementById('caseIntro').innerHTML =
+      `<b>${current.victim}</b> was found dead at <b>${current.manor}</b>, in the ${current.crimeLocation}. ` +
+      `The murder weapon was a <b>${wCap}</b>. ${current.N} guests were present that night — ` +
+      `${current.suspects.join(', ')}. Study the testimony, fill the deduction grid, and name the culprit.`;
+
+    renderClues();
+    renderTable();
+    renderAccuse();
+    document.getElementById('gridFeedback').textContent = '';
+    document.getElementById('accuseFeedback').textContent = '';
+    showScreen('screenCase');
+  }
+
+  function renderClues(){
+    const list = document.getElementById('clueList');
+    list.innerHTML = '';
+    current.clueTexts.forEach((t,i)=>{
+      const d = document.createElement('div');
+      d.className = 'clue-item';
+      d.innerHTML = `<span class="clue-num">${i+1}.</span><span>${t}</span>`;
+      list.appendChild(d);
+    });
+    if(current.revealedHints){
+      current.revealedHints.forEach((t)=>{
+        const d = document.createElement('div');
+        d.className = 'clue-item clue-hint';
+        d.innerHTML = `<span class="clue-num">★</span><span>${t}</span>`;
+        list.appendChild(d);
+      });
+    }
+  }
+
+  function renderTable(){
+    const table = document.getElementById('deductionTable');
+    let html = '<tr><th>Suspect</th>' + current.cats.map(c=>`<th>${CAT_LABEL[c]}</th>`).join('') + '</tr>';
+    current.suspects.forEach((name, si)=>{
+      html += `<tr><td class="suspect-name">${name}</td>`;
+      current.cats.forEach(cat=>{
+        html += `<td><select class="attr-select" data-cat="${cat}" data-s="${si}"><option value="-1">—</option>`;
+        current.values[cat].forEach((v,vi)=>{
+          html += `<option value="${vi}">${v}</option>`;
+        });
+        html += `</select></td>`;
+      });
+      html += '</tr>';
+    });
+    table.innerHTML = html;
+    table.querySelectorAll('select.attr-select').forEach(sel=>{
+      sel.addEventListener('change', e=>{
+        const cat = e.target.dataset.cat, s = parseInt(e.target.dataset.s);
+        gridState[cat][s] = parseInt(e.target.value);
+        e.target.classList.remove('correct','incorrect');
+      });
+    });
+  }
+
+  function renderAccuse(){
+    const grid = document.getElementById('accuseGrid');
+    grid.innerHTML = '';
+    current.suspects.forEach((name, si)=>{
+      const btn = document.createElement('button');
+      btn.className = 'accuse-btn';
+      btn.textContent = name;
+      btn.addEventListener('click', ()=> accuse(si));
+      grid.appendChild(btn);
+    });
+  }
+
+  function accuse(si){
+    if(si === current.guiltyIdx){
+      const stars = (sessionHints===0 && sessionWrong===0) ? 3 : (sessionHints+sessionWrong<=2 ? 2 : 1);
+      const prevStars = progress.solved[current.n] || 0;
+      progress.solved[current.n] = Math.max(prevStars, stars);
+      progress.maxUnlocked = Math.max(progress.maxUnlocked, Math.min(100, current.n+1));
+      refreshTopbar();
+      openModal(true, stars);
+    } else {
+      sessionWrong++;
+      document.getElementById('accuseFeedback').textContent = `${current.suspects[si]} has an alibi that clears them. Look again.`;
+      document.getElementById('accuseFeedback').className = 'feedback bad';
+    }
+  }
+
+  function checkGrid(){
+    let allFilled = true, allCorrect = true;
+    document.querySelectorAll('select.attr-select').forEach(sel=>{
+      const cat = sel.dataset.cat, s = parseInt(sel.dataset.s);
+      const v = parseInt(sel.value);
+      sel.classList.remove('correct','incorrect');
+      if(v===-1){ allFilled=false; return; }
+      if(v === current.solution[cat][s]) sel.classList.add('correct');
+      else { sel.classList.add('incorrect'); allCorrect=false; }
+    });
+    const fb = document.getElementById('gridFeedback');
+    if(!allFilled){ fb.textContent = 'Fill every cell to check your full deduction.'; fb.className='feedback'; }
+    else if(allCorrect){ fb.textContent = 'Every cell checks out. Now name the culprit.'; fb.className='feedback ok'; }
+    else { fb.textContent = 'Some cells don\'t match the evidence — re-read the testimony.'; fb.className='feedback bad'; }
+  }
+
+  function revealHint(){
+    if(!current.revealedHints) current.revealedHints = [];
+    if(current.revealedHints.length >= current.hintTexts.length){
+      document.getElementById('gridFeedback').textContent = 'No further evidence remains — you have everything you need.';
+      document.getElementById('gridFeedback').className = 'feedback';
+      return;
+    }
+    current.revealedHints.push(current.hintTexts[current.revealedHints.length]);
+    sessionHints++;
+    renderClues();
+  }
+
+  function openModal(won, stars){
+    document.getElementById('modalTitle').textContent = won ? 'Case closed' : 'Case unsolved';
+    document.getElementById('modalStars').textContent = '★'.repeat(stars) + '☆'.repeat(3-stars);
+    document.getElementById('modalText').textContent = won
+      ? `You correctly named ${current.suspects[current.guiltyIdx]} as the culprit.`
+      : 'Review the evidence and try again.';
+    document.getElementById('modalNext').style.display = (current.n<100) ? 'inline-block' : 'none';
+    document.getElementById('modalBg').classList.add('active');
+  }
+
+  document.getElementById('modalReplay').addEventListener('click', ()=>{
+    document.getElementById('modalBg').classList.remove('active');
+    openCase(current.n);
+  });
+  document.getElementById('modalNext').addEventListener('click', ()=>{
+    document.getElementById('modalBg').classList.remove('active');
+    if(current.n<100) openCase(current.n+1);
+  });
+
+  document.getElementById('beginBtn').addEventListener('click', ()=>{
+    buildLevelSelect();
+    showScreen('screenLevels');
+  });
+  document.getElementById('backBtn').addEventListener('click', ()=>{
+    buildLevelSelect();
+    showScreen('screenLevels');
+  });
+  document.getElementById('checkBtn').addEventListener('click', checkGrid);
+  document.getElementById('hintBtn').addEventListener('click', revealHint);
+  document.getElementById('resetBtn').addEventListener('click', ()=> openCase(current.n));
+
+  refreshTopbar();
+})();
+</script>
+</body>
+</html>
